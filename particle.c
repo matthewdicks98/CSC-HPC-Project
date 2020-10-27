@@ -236,7 +236,7 @@ int main(int argc, char *argv[] ){
                 printf("initializing population\n");
                 initPopulation(population,population_size,x_max,y_max,num_particles);
                 double init_pop_fit = calcFitness(population[0], num_particles); // just seeing what the initial solutions look like
-                printf("Initial population fitness = %f\n", init_pop_fit);
+                printf("Initial population fitness = %f\n", init_pop_fit); // take out later
                 printf("=========%d\n", k);
 
                 double max_fitness=0;
