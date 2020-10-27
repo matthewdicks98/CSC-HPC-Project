@@ -313,7 +313,6 @@ int main(int argc, char *argv[] ){
     // Stop measuring time and calculate the elapsed time
     double end = omp_get_wtime();
     printf("Time: \t %f \n", end - start);
-
     return 0;
 }
 
