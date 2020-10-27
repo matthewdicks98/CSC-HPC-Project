@@ -50,7 +50,7 @@ void printboxFile(box_pattern box,FILE *f,int num_particles ){
     fprintf(f,"%d,%d\n",box.person[i].x_pos,box.person[i].y_pos); //,box.fitness);
 }
 
-/* FITNESS FUNCTION  - this is key*/
+/* FITNESS FUNCTION - this is key*/
 double calcFitness(box_pattern box,int num_particles){
     double fitness=0.0;
     int i,j;
