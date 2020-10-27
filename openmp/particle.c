@@ -66,7 +66,7 @@ double calcFitness(box_pattern box,int num_particles){
     double x,y,r,tmp;
 
     #pragma omp parallel for schedule(dynamic) private(x, y, r, tmp) reduction(+ : fitness)
-    for (int i = 0; i < num_particles - 1; i++) {
+    for (int i = 0; i < num_particles - 1; i++){
         // adding this parallel section does not seem to help
         //#pragma omp parallel for schedule(dynamic) private(x, y, r, tmp) reduction(+ : fitness)
         for (int j =i+1;j<num_particles;j++) { //cycle through all pairs to calc distances
