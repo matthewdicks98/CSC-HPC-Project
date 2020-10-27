@@ -214,8 +214,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
 
 int main(int argc, char *argv[] ){
     // Start measuring time
-    struct timeval begin, end;
-    gettimeofday(&begin, 0);
+    double start = omp_get_wtime();
 
     int population_size = DEFAULT_POP_SIZE;
     int x_max = X_DEFAULT;
@@ -312,11 +311,8 @@ int main(int argc, char *argv[] ){
     printf("Average generations: %f\n", (double)gen_count / (double)k);
 
     // Stop measuring time and calculate the elapsed time
-    gettimeofday(&end, 0);
-    long seconds = end.tv_sec - begin.tv_sec;
-    long microseconds = end.tv_usec - begin.tv_usec;
-    double elapsed = seconds + microseconds * 1e-6;
-    printf("Program took %f seconds to execute \n", elapsed);
+    double end = omp_get_wtime();
+    printf("Time: \t %f \n", end - start);
 
     return 0;
 }
