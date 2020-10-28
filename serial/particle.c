@@ -123,7 +123,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             new_generation[i].person=malloc(num_particles*sizeof(position));
 
         for (i=0; i<population_size; i+=2){ //two children
-
+                
                 // Determine breeding pair, with tournament of 2 (joust)
                 int one = rand()%(population_size), two=rand()%(population_size);
                 int parentOne=two;
