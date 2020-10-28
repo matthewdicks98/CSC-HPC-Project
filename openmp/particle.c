@@ -85,6 +85,7 @@ double calcFitness(box_pattern box,int num_particles){
 /* Creates initial random population */
 void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int num_particles){
     int i,p;
+    // possible parallization
     for (p=0;p<population_size;p++) {
         for (i=0; i<num_particles; i++){
             box[p].person[i].x_pos=(rand()%(xmax + 1));
@@ -98,6 +99,9 @@ void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int
 /* create child from parents */
 box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern parentTwo, int splitPoint,int num_particles){
     int i=0;
+
+    // these parallel sections also never really helped
+    //#pragma parallel omp parallel for private(i)
     for (i=0; i<splitPoint; i++){ //copy over parentOne up to splitPoint
         child.person[i].x_pos=parentOne.person[i].x_pos;
         child.person[i].y_pos=parentOne.person[i].y_pos;
@@ -106,6 +110,7 @@ box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern pare
     if((rand()%(2) ==1) && (i<num_particles) &&(i>=0)) //50% of time split in middle of person, more mixing
         child.person[i].y_pos=parentTwo.person[i].y_pos;
     
+    //#pragma parallel omp parallel for private(i)
     for (i=splitPoint; i<num_particles; i++){ //copy over parentTwo from splitPoint to end
         child.person[i].x_pos=parentTwo.person[i].x_pos;
         child.person[i].y_pos=parentTwo.person[i].y_pos;
@@ -135,29 +140,35 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
         for(i=0;i<population_size;i++)
             new_generation[i].person=malloc(num_particles*sizeof(position));
 
+        /////////// HERE /////////////
+        // possible parallization but might not be easy (try first)
+        //#pragma omp parallel for private(i) //speed up is ok
         for (i=0; i<population_size; i+=2){ //two children
 
-                // Determine breeding pair, with tournament of 2 (joust)
-                int one = rand()%(population_size), two=rand()%(population_size);
-                int parentOne=two;
-                if (box[one].fitness > box[two].fitness) parentOne=one; //joust
-            
-                one = rand()%(population_size);
-                two=rand()%(population_size);
-                int parentTwo=two;
-                if (box[one].fitness > box[two].fitness) parentTwo=one; //joust
-            
-                int splitPoint = rand() % num_particles; //split chromosome at point
-                new_generation[i]= crossover(new_generation[i], box[parentOne], box[parentTwo], splitPoint,num_particles); //first child
+            // Determine breeding pair, with tournament of 2 (joust)
+            int one = rand() % (population_size), two = rand() % (population_size);
+            int parentOne = two;
+            if (box[one].fitness > box[two].fitness)
+                parentOne = one; //joust
 
-                new_generation[i+1] = crossover(new_generation[i+1], box[parentTwo], box[parentOne], splitPoint,num_particles); //second child
-            
-                // Mutation first child
-                double mutation = rand()/(double)RAND_MAX;
-                if (mutation <= MUTATION_RATE ){
-                    int mutated = rand() % num_particles;
-                    new_generation[i].person[mutated].x_pos=(rand()%(x_max + 1));
-                    new_generation[i].person[mutated].y_pos=(rand()%(y_max + 1));
+            one = rand() % (population_size);
+            two = rand() % (population_size);
+            int parentTwo = two;
+            if (box[one].fitness > box[two].fitness)
+                parentTwo = one; //joust
+
+            int splitPoint = rand() % num_particles;                                                                     //split chromosome at point
+            new_generation[i] = crossover(new_generation[i], box[parentOne], box[parentTwo], splitPoint, num_particles); //first child
+
+            new_generation[i + 1] = crossover(new_generation[i + 1], box[parentTwo], box[parentOne], splitPoint, num_particles); //second child
+
+            // Mutation first child
+            double mutation = rand() / (double)RAND_MAX;
+            if (mutation <= MUTATION_RATE)
+            {
+                int mutated = rand() % num_particles;
+                new_generation[i].person[mutated].x_pos = (rand() % (x_max + 1));
+                new_generation[i].person[mutated].y_pos = (rand() % (y_max + 1));
                 }
                 mutation = rand()/(double)RAND_MAX; //mutation second child
                 if (mutation <= MUTATION_RATE ){
@@ -214,7 +225,10 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
 
 int main(int argc, char *argv[] ){
     // Start measuring time
-    double start = omp_get_wtime();
+    // double start = omp_get_wtime(); use this in testing but use other so we can run seq
+    struct timeval begin, end;
+    gettimeofday(&begin, 0);
+
 
     int population_size = DEFAULT_POP_SIZE;
     int x_max = X_DEFAULT;
@@ -249,6 +263,7 @@ int main(int argc, char *argv[] ){
     for (i = 0; i < population_size; i++)
         population[i].person = malloc(num_particles * sizeof(position)); //allocate memory
 
+    // possible parallization here
     for (k = 0; k < iter; k++)
     {   //k is number of times whole simulation is run
         // populate with initial population
@@ -265,7 +280,7 @@ int main(int argc, char *argv[] ){
         double best_fitness = 0;
         int count_since_last_improvement = 0;
         // stopping condition for the GA
-        while (gen < MAX_GEN && count_since_last_improvement < TOLERANCE)
+        while (gen < MAX_GEN)
         {
             // want to add a tolerence stopping criteria because convergence seems to be
             // achieved at around gen = 300
@@ -292,6 +307,7 @@ int main(int argc, char *argv[] ){
         }
         printf("# generations = %d \n", gen);
         printf("Best solution:\n");
+        // will have to block here
         printbox(population[highest], num_particles);
         if (f == NULL)
         {
@@ -311,8 +327,15 @@ int main(int argc, char *argv[] ){
     printf("Average generations: %f\n", (double)gen_count / (double)k);
 
     // Stop measuring time and calculate the elapsed time
-    double end = omp_get_wtime();
-    printf("Time: \t %f \n", end - start);
+    //double end = omp_get_wtime();
+    //printf("Time: \t %f \n", end - start);
+
+    gettimeofday(&end, 0);
+    long seconds = end.tv_sec - begin.tv_sec;
+    long microseconds = end.tv_usec - begin.tv_usec;
+    double elapsed = seconds + microseconds * 1e-6;
+    printf("Time measured: %.3f seconds.\n", elapsed);
+
     return 0;
 }
 

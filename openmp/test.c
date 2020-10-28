@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <omp.h>
+#include <time.h>
 
 int main(void){
 
@@ -10,10 +11,10 @@ int main(void){
     int z, y;
     double r,tmp;
     int dist = 0;
-    //#pragma omp parallel
-    #pragma omp parallel for private(z, y, r, tmp)  reduction(+:dist)
+
+    // fitness function test
+    /*#pragma omp parallel for private(z, y, r, tmp)  reduction(+:dist)
     for(int i = 0; i<4-1; i++){
-    //#pragma omp parallel for
     #pragma omp parallel for private(z, y, r, tmp) reduction(+ : dist)
         for(int j = i + 1; j<4; j++){
             z = x[j][0] - x[i][0];
@@ -26,5 +27,26 @@ int main(void){
         printf("dist = %d\n", dist);
     }
     printf("dist = %d\n", dist);
-    return dist;
+    return dist;*/
+
+    // breeding test
+    int i;
+    int v[6];
+    v[0] = 10;
+    int q[6] = {1,1,1,1,1,1};
+    #pragma omp parallel for private(i)
+    for(i = 0; i<6; i+=2){
+        unsigned int s = omp_get_thread_num();
+        unsigned int a = omp_get_thread_num()+100;
+        int one = rand_r(&s) %6;
+        int two = rand_r(&a)%6;
+        q[i] = v[one] - v[two];
+        q[i+1] = v[two] + v[one];
+        printf("Thread : %d i : %d one : %d two : %d val1 : %d val2 : %d\n", omp_get_thread_num(), i,
+        one, two, v[one],v[two]);
+    }
+    for(int j = 0; j<6; j++){
+        printf("%d\t",q[j]);
+    }
+    printf("\n");
 }
