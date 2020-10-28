@@ -100,7 +100,7 @@ void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int
 box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern parentTwo, int splitPoint,int num_particles){
     int i=0;
 
-    // these parallel sections also never really helped
+    //these parallel sections also never really helped
     //#pragma parallel omp parallel for private(i)
     for (i=0; i<splitPoint; i++){ //copy over parentOne up to splitPoint
         child.person[i].x_pos=parentOne.person[i].x_pos;
