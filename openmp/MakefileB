@@ -1,0 +1,21 @@
+# Makefile for MacBook
+
+# OMPFLAG = -DOMPVER2 -DOMPVER3
+
+CC= cc
+# CFLAGS =  -O1 -lm -fopenmp
+LDFLAGS = -O0 -lm -fopenmp 
+
+# .c.o:
+# 	${CC} ${CFLAGS} $(OMPFLAG) -c $*.c 
+
+PARTICLEOMPOBJS = particle
+
+particle_omp: $(PARTICLEOMPOBJS).c
+	$(CC) -o particle_omp $(LDFLAGS) $(PARTICLEOMPOBJS).c -lm
+
+run_omp: particle_omp
+	./particle_omp 2000 100 100 10 5
+	cat solution.txt
+	python3 plot_solution.py solution.txt
+
