@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <mpi.h>
 
 #define DEFAULT_POP_SIZE 300 //bigger population is more costly
 #define DEFAULT_NUM_PARTICLES 30 //more PARTICLES is more costly
@@ -32,6 +33,13 @@ typedef struct{
     double fitness;
 } box_pattern;
 
+// a round function to help with comparison of doubles
+double my_round(double x, unsigned int digits)
+{
+    double fac = pow(10, digits);
+    return round(x * fac) / fac;
+}
+
 //display the box pattern
 void printbox(box_pattern box,int num_particles){
     int i;
@@ -53,8 +61,10 @@ void printboxFile(box_pattern box,FILE *f,int num_particles ){
 /* FITNESS FUNCTION  - this is key*/
 double calcFitness(box_pattern box,int num_particles){
     double fitness=0.0;
+    double total_fitness = 0.0;
     int i,j;
     double x,y,r,tmp;
+
     for (i =0;i<num_particles-1;i++) {
         for (j =i+1;j<num_particles;j++) { //cycle through all pairs to calc distances
             x = (double)box.person[i].x_pos - (double)box.person[j].x_pos;
@@ -66,7 +76,7 @@ double calcFitness(box_pattern box,int num_particles){
             fitness+= (pow(tmp,12)-pow(tmp,6)); //Lennard-Jones function
         }
     }
-    return fitness;
+    return my_round(fitness,6);
 }
 
 /* Creates initial random population */
@@ -202,12 +212,17 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
 
 
 int main(int argc, char *argv[] ){
-        int population_size=DEFAULT_POP_SIZE;
+        // start MPI timer
+        //double start, finish;
+        //start = MPI_Wtime();
+
+        int population_size = DEFAULT_POP_SIZE;
         int x_max =X_DEFAULT;
         int y_max=Y_DEFAULT;
         int num_particles=DEFAULT_NUM_PARTICLES;
         int iter=ITERATIONS;
         int k,i;
+        int myid; // so we can keep track of processes
         if (argc >=2) {
             population_size = atoi(argv[1]); //size population first command line argument
             if (argc>=4) {
@@ -246,17 +261,18 @@ int main(int argc, char *argv[] ){
                 double best_fitness = 0;
                 int count_since_last_improvement = 0;
                 // stopping condition for the GA
-                while (gen<MAX_GEN && count_since_last_improvement < TOLERANCE){ 
+                while (gen<MAX_GEN && count_since_last_improvement <= TOLERANCE){ 
                 // want to add a tolerence stopping criteria because convergence seems to be
                 // achieved at around gen = 300
-                    /*if( k == 4){
-                        printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
-                    }*/
                     highest=breeding(population,population_size,x_max,y_max,num_particles);
                     // change count
                     if(population[highest].fitness <= best_fitness){
                         count_since_last_improvement++;
                     }else{
+                        if (k == 0)
+                        {
+                            printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
+                        }
                         count_since_last_improvement = 0;
                         best_fitness = population[highest].fitness;
                     }
@@ -281,6 +297,9 @@ int main(int argc, char *argv[] ){
         free(population); //release memory
 
         printf("Average generations: %f\n", (double)gen_count/(double)k);
+
+        //finish = MPI_Wtime();
+
         return 0;
 }
 

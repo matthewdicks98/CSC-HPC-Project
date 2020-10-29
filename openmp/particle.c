@@ -99,7 +99,6 @@ void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int
 /* create child from parents */
 box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern parentTwo, int splitPoint,int num_particles){
     int i=0;
-
     //these parallel sections also never really helped
     //#pragma parallel omp parallel for private(i)
     for (i=0; i<splitPoint; i++){ //copy over parentOne up to splitPoint
@@ -107,8 +106,8 @@ box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern pare
         child.person[i].y_pos=parentOne.person[i].y_pos;
     }
     i--;
-    if((rand()%(2) ==1) && (i<num_particles) &&(i>=0)) //50% of time split in middle of person, more mixing
-        child.person[i].y_pos=parentTwo.person[i].y_pos;
+    //if((rand()%(2) ==1) && (i<num_particles) &&(i>=0)) //50% of time split in middle of person, more mixing
+    //    child.person[i].y_pos=parentTwo.person[i].y_pos;
     
     //#pragma parallel omp parallel for private(i)
     for (i=splitPoint; i<num_particles; i++){ //copy over parentTwo from splitPoint to end
@@ -140,43 +139,53 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
         for(i=0;i<population_size;i++)
             new_generation[i].person=malloc(num_particles*sizeof(position));
 
+        // initializing seeds
+        int *seeds = (int *)malloc(sizeof(int) * (13 * omp_get_max_threads()));
+        for (int j = 0; j < 13 * omp_get_max_threads(); j++)
+        {
+            seeds[j] = j;
+        }
+
         /////////// HERE /////////////
         // possible parallization but might not be easy (try first)
-        //#pragma omp parallel for private(i) //speed up is ok
-        for (i=0; i<population_size; i+=2){ //two children
+        #pragma omp parallel for private(i) //speed up is ok
+        for (i = 0; i < population_size; i += 2)
+        { //two children
+
+            int start = omp_get_thread_num()*13;
 
             // Determine breeding pair, with tournament of 2 (joust)
-            int one = rand() % (population_size), two = rand() % (population_size);
+            int one = rand_r(&seeds[start + 0]) % (population_size),
+            two = rand_r(&seeds[start + 1]) % (population_size);
             int parentOne = two;
             if (box[one].fitness > box[two].fitness)
                 parentOne = one; //joust
 
-            one = rand() % (population_size);
-            two = rand() % (population_size);
+            one = rand_r(&seeds[start + 2]) % (population_size);
+            two = rand_r(&seeds[start + 3]) % (population_size);
             int parentTwo = two;
             if (box[one].fitness > box[two].fitness)
                 parentTwo = one; //joust
 
-            int splitPoint = rand() % num_particles;                                                                     //split chromosome at point
+            int splitPoint = rand_r(&seeds[start + 4]) % num_particles;                                                  //split chromosome at point
             new_generation[i] = crossover(new_generation[i], box[parentOne], box[parentTwo], splitPoint, num_particles); //first child
 
             new_generation[i + 1] = crossover(new_generation[i + 1], box[parentTwo], box[parentOne], splitPoint, num_particles); //second child
 
             // Mutation first child
-            double mutation = rand() / (double)RAND_MAX;
+            double mutation = rand_r(&seeds[start + 5]) / (double)RAND_MAX;
             if (mutation <= MUTATION_RATE)
             {
-                int mutated = rand() % num_particles;
-                new_generation[i].person[mutated].x_pos = (rand() % (x_max + 1));
-                new_generation[i].person[mutated].y_pos = (rand() % (y_max + 1));
-                }
-                mutation = rand()/(double)RAND_MAX; //mutation second child
-                if (mutation <= MUTATION_RATE ){
-                    int mutated = rand() % num_particles;
-                    new_generation[i+1].person[mutated].x_pos=(rand()%(x_max + 1));
-                    new_generation[i+1].person[mutated].y_pos=(rand()%(y_max + 1));
-                }
-
+                int mutated = rand_r(&seeds[start + 6]) % num_particles;
+                new_generation[i].person[mutated].x_pos = (rand_r(&seeds[start + 7]) % (x_max + 1));
+                new_generation[i].person[mutated].y_pos = (rand_r(&seeds[start + 8]) % (y_max + 1));
+            }
+            mutation = rand_r(&seeds[start + 9]) / (double)RAND_MAX; //mutation second child
+            if (mutation <= MUTATION_RATE ){
+                int mutated = rand_r(&seeds[start + 10]) % num_particles;
+                new_generation[i + 1].person[mutated].x_pos = (rand_r(&seeds[start + 11]) % (x_max + 1));
+                new_generation[i + 1].person[mutated].y_pos = (rand_r(&seeds[start + 12]) % (y_max + 1));
+            }
         }
   
         //find maximum parent fitness to keep and minimum new generation to throw away
@@ -220,6 +229,8 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             free(new_generation[i].person); //release memory
         free(new_generation); //release memory
         free(max_parent.person);
+        free(seeds);
+
         return highest;
 }
 
@@ -229,7 +240,7 @@ int main(int argc, char *argv[] ){
     struct timeval begin, end;
     gettimeofday(&begin, 0);
 
-
+    printf("threads max = %d\n", omp_get_max_threads());
     int population_size = DEFAULT_POP_SIZE;
     int x_max = X_DEFAULT;
     int y_max = Y_DEFAULT;
@@ -280,7 +291,7 @@ int main(int argc, char *argv[] ){
         double best_fitness = 0;
         int count_since_last_improvement = 0;
         // stopping condition for the GA
-        while (gen < MAX_GEN)
+        while (gen < MAX_GEN && count_since_last_improvement <= TOLERANCE)
         {
             // want to add a tolerence stopping criteria because convergence seems to be
             // achieved at around gen = 300
@@ -307,7 +318,7 @@ int main(int argc, char *argv[] ){
         }
         printf("# generations = %d \n", gen);
         printf("Best solution:\n");
-        // will have to block here
+
         printbox(population[highest], num_particles);
         if (f == NULL)
         {
@@ -335,6 +346,8 @@ int main(int argc, char *argv[] ){
     long microseconds = end.tv_usec - begin.tv_usec;
     double elapsed = seconds + microseconds * 1e-6;
     printf("Time measured: %.3f seconds.\n", elapsed);
+
+    printf("Time per Generation = %f\n",elapsed/gen_count);
 
     return 0;
 }

@@ -1,15 +1,12 @@
-particle: particle.c
-	 /usr/bin/gcc -I/usr/include -L/usr/lib particle.c -o particle -lm
-particle_omp: particle.c
-	/usr/bin/gcc -I/usr/include -L/usr/lib particle.c -fopenmp -o particle_omp -lm
+particle_mpi: particle.c
+	mpicc -openmpi-mp particle.c -o particle_mpi -lm
 
-run: particle
-	./particle 2000 100 100 10 5
+run_mpi: particle_mpi
+	mpirun particle_mpi 2000 100 100 20 1
 	cat solution.txt
 	python3 plot_solution.py solution.txt
 
-run_omp: particle_omp
-	./particle_omp 2000 100 100 10 5
+run: particle_mpi
+	./particle_mpi 2000 100 100 20 1
 	cat solution.txt
 	python3 plot_solution.py solution.txt
-

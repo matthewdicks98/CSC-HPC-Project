@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <sys/time.h>
+#include <time.h>
 
 #define DEFAULT_POP_SIZE 300 //bigger population is more costly
 #define DEFAULT_NUM_PARTICLES 30 //more PARTICLES is more costly
@@ -31,6 +33,13 @@ typedef struct{
     position *person;
     double fitness;
 } box_pattern;
+
+// a round function to help with comparison of doubles
+double my_round(double x, unsigned int digits)
+{
+    double fac = pow(10, digits);
+    return round(x * fac) / fac;
+}
 
 //display the box pattern
 void printbox(box_pattern box,int num_particles){
@@ -66,7 +75,7 @@ double calcFitness(box_pattern box,int num_particles){
             fitness+= (pow(tmp,12)-pow(tmp,6)); //Lennard-Jones function
         }
     }
-    return fitness;
+    return my_round(fitness,6);
 }
 
 /* Creates initial random population */
@@ -202,21 +211,30 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
 
 
 int main(int argc, char *argv[] ){
-        int population_size=DEFAULT_POP_SIZE;
-        int x_max =X_DEFAULT;
-        int y_max=Y_DEFAULT;
-        int num_particles=DEFAULT_NUM_PARTICLES;
-        int iter=ITERATIONS;
-        int k,i;
-        if (argc >=2) {
-            population_size = atoi(argv[1]); //size population first command line argument
-            if (argc>=4) {
-                x_max=atoi(argv[2]); //x dimension
-                y_max=atoi(argv[3]); //x dimension
-            }
-            if (argc>=5) num_particles=atoi(argv[4]);
-            if (argc==6) iter =atoi(argv[5]);
+    // Start measuring time
+    // double start = omp_get_wtime(); use this in testing but use other so we can run seq
+    struct timeval begin, end;
+    gettimeofday(&begin, 0);
+
+    int population_size = DEFAULT_POP_SIZE;
+    int x_max = X_DEFAULT;
+    int y_max = Y_DEFAULT;
+    int num_particles = DEFAULT_NUM_PARTICLES;
+    int iter = ITERATIONS;
+    int k, i;
+    if (argc >= 2)
+    {
+        population_size = atoi(argv[1]); //size population first command line argument
+        if (argc >= 4)
+        {
+            x_max = atoi(argv[2]); //x dimension
+            y_max = atoi(argv[3]); //x dimension
         }
+        if (argc >= 5)
+            num_particles = atoi(argv[4]);
+        if (argc == 6)
+            iter = atoi(argv[5]);
+    }
 
         printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations\n",num_particles,population_size,x_max,y_max,iter);
     
@@ -246,17 +264,18 @@ int main(int argc, char *argv[] ){
                 double best_fitness = 0;
                 int count_since_last_improvement = 0;
                 // stopping condition for the GA
-                while (gen<MAX_GEN && count_since_last_improvement < TOLERANCE){ 
+                while (gen<MAX_GEN && count_since_last_improvement <= TOLERANCE){ 
                 // want to add a tolerence stopping criteria because convergence seems to be
                 // achieved at around gen = 300
-                    /*if( k == 4){
-                        printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
-                    }*/
                     highest=breeding(population,population_size,x_max,y_max,num_particles);
                     // change count
                     if(population[highest].fitness <= best_fitness){
                         count_since_last_improvement++;
                     }else{
+                        if (k == 0)
+                        {
+                            printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
+                        }
                         count_since_last_improvement = 0;
                         best_fitness = population[highest].fitness;
                     }
@@ -281,6 +300,13 @@ int main(int argc, char *argv[] ){
         free(population); //release memory
 
         printf("Average generations: %f\n", (double)gen_count/(double)k);
+
+        gettimeofday(&end, 0);
+        long seconds = end.tv_sec - begin.tv_sec;
+        long microseconds = end.tv_usec - begin.tv_usec;
+        double elapsed = seconds + microseconds * 1e-6;
+        printf("Time measured: %.3f seconds.\n", elapsed);
+
         return 0;
 }
 
