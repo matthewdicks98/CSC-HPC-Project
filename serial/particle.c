@@ -307,6 +307,8 @@ int main(int argc, char *argv[] ){
         double elapsed = seconds + microseconds * 1e-6;
         printf("Time measured: %.3f seconds.\n", elapsed);
 
+        printf("Time per Generation = %f\n", elapsed / gen_count);
+
         return 0;
 }
 

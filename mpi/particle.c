@@ -222,7 +222,7 @@ int main(int argc, char *argv[] ){
         int num_particles=DEFAULT_NUM_PARTICLES;
         int iter=ITERATIONS;
         int k,i;
-        int myid; // so we can keep track of processes
+        int myid, nodenum; // so we can keep track of processes
         if (argc >=2) {
             population_size = atoi(argv[1]); //size population first command line argument
             if (argc>=4) {
@@ -233,13 +233,29 @@ int main(int argc, char *argv[] ){
             if (argc==6) iter =atoi(argv[5]);
         }
 
-        printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations\n",num_particles,population_size,x_max,y_max,iter);
-    
-        int gen_count=0;           
-    
+        // initialize mpi
+        MPI_Init(&argc, &argv);               //Start MPI
+        MPI_Comm_rank(MPI_COMM_WORLD, &myid); //get rank of node's process
+        MPI_Comm_size(MPI_COMM_WORLD, &nodenum);
+
+        // distribute populations over the processes
+        population_size = (int)round(population_size/nodenum);
+
+        // migration stuff
+        double migration_rate = 0.2;
+        int migration_interval = 10;
+
+        int gen_count = 0;
+
+        // prints and file io must come from p0
         FILE *f = fopen("solution.txt", "w");
-        printf("Writing dimensions to file\n");
-        fprintf(f,"%d,%d\n",x_max,y_max); //write box dimensions as first line of file
+        if(myid == 0){
+            printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations\n", num_particles, population_size, x_max, y_max, iter);
+
+            printf("Writing dimensions to file\n");
+            fprintf(f, "%d,%d\n", x_max, y_max); //write box dimensions as first line of file
+        }
+
         box_pattern * population;
     
         population = (box_pattern*) malloc(sizeof(box_pattern)*population_size); //allocate memory
@@ -248,11 +264,15 @@ int main(int argc, char *argv[] ){
 
         for (k=0; k<iter; k++){ //k is number of times whole simulation is run
               // populate with initial population
-                printf("initializing population\n");
+                if(myid == 0){
+                    printf("initializing population\n");
+                }
                 initPopulation(population,population_size,x_max,y_max,num_particles);
                 double init_pop_fit = calcFitness(population[0], num_particles); // just seeing what the initial solutions look like
+                if(myid == 0){
                 printf("Initial population fitness = %f\n", init_pop_fit); // take out later
                 printf("=========%d\n", k);
+                }
 
                 double max_fitness=0;
                 // main loop
@@ -271,12 +291,16 @@ int main(int argc, char *argv[] ){
                     }else{
                         if (k == 0)
                         {
+                            if(myid == 0){
                             printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
+                            }
                         }
                         count_since_last_improvement = 0;
                         best_fitness = population[highest].fitness;
                     }
                     gen+=1;
+                    // do migration stuff here
+                    
                 }
             printf("# generations = %d \n", gen);
             printf("Best solution:\n");
