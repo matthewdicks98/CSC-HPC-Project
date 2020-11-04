@@ -100,7 +100,7 @@ void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int
 box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern parentTwo, int splitPoint,int num_particles){
     int i=0;
     // these parallel sections also never really helped
-    //#pragma parallel omp parallel for private(i)
+    #pragma parallel omp parallel for private(i)
     for (i=0; i<splitPoint; i++){ //copy over parentOne up to splitPoint
         child.person[i].x_pos=parentOne.person[i].x_pos;
         child.person[i].y_pos=parentOne.person[i].y_pos;
@@ -109,7 +109,7 @@ box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern pare
     if((rand()%(2) ==1) && (i<num_particles) &&(i>=0)) //50% of time split in middle of person, more mixing
         child.person[i].y_pos=parentTwo.person[i].y_pos;
     
-    //#pragma parallel omp parallel for private(i)
+    #pragma parallel omp parallel for private(i)
     for (i=splitPoint; i<num_particles; i++){ //copy over parentTwo from splitPoint to end
         child.person[i].x_pos=parentTwo.person[i].x_pos;
         child.person[i].y_pos=parentTwo.person[i].y_pos;

@@ -19,7 +19,7 @@
 static const int X_DEFAULT=20; //width of box
 static const int Y_DEFAULT=20; //length of box
 static const double MUTATION_RATE=0.10; //how often random mutations occur
-static const double MAX_GEN =1000; // maximum number of generations
+static const double MAX_GEN =800; // maximum number of generations
 static const double ITERATIONS=10; //number of times the whole process is run
 static const double TOLERANCE=50; //not used... yet
 
@@ -260,7 +260,7 @@ int main(int argc, char *argv[] ){
                 
             }
 
-            if (argc==8) {
+            if (argc>=8) {
                 migration_interval = atoi(argv[6]);
                 migration_rate = atof(argv[7]);
             }
@@ -288,7 +288,7 @@ int main(int argc, char *argv[] ){
         if (myid == 0)
         {
             f = fopen("solution.txt", "w");
-            printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations | migration_interval=%d, migration_rate=%f\n", num_particles, population_size, x_max, y_max, iter,migration_interval,migration_rate);
+            printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations | migration_interval=%d, migration_rate=%f, nodes=%d\n", num_particles, population_size, x_max, y_max, iter,migration_interval,migration_rate, nodenum);
 
             printf("Writing dimensions to file\n");
             fprintf(f, "%d,%d\n", x_max, y_max); //write box dimensions as first line of file
@@ -320,7 +320,7 @@ int main(int argc, char *argv[] ){
                 int count_since_last_improvement = 0;
                 
                 // stopping condition for the GA
-                while (gen< 200){ //&& count_since_last_improvement <= TOLERANCE){ 
+                while (gen< MAX_GEN){ //&& count_since_last_improvement <= TOLERANCE){ 
                 // want to add a tolerence stopping criteria because convergence seems to be
                 // achieved at around gen = 300
                     highest=breeding(population,population_size,x_max,y_max,num_particles);
@@ -430,7 +430,7 @@ int main(int argc, char *argv[] ){
                             MPI_Recv(positions, num_particles, positiontype, rec_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                             
                             // randomly choose a solution in the population to change
-                            //printf("myid = %d |send fit = %d | rec fit = %d\n", myid, subpopulation_send[0].person[num_particles-1].x_pos, positions[num_particles-1].x_pos);
+                            //printf("myid = %d |send fit = %d | rec fit = %d\n", myid, subpopulation_send[0].person[0].x_pos, positions[0].x_pos);
 
                             int r = rand() % population_size;
                             population[r].fitness = fitness_rec[0];
