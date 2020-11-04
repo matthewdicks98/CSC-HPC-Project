@@ -106,7 +106,7 @@ box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern pare
         child.person[i].x_pos=parentTwo.person[i].x_pos;
         child.person[i].y_pos=parentTwo.person[i].y_pos;
     }
-    child.fitness=calcFitness(child,num_particles); //calculate fitness
+    //child.fitness=calcFitness(child,num_particles); //calculate fitness
     return child;
 }
 
@@ -174,7 +174,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             if (box[i].fitness>max_parent.fitness) {
                 copybox(&max_parent,&box[i],num_particles); //replace lowest fitness with highest parent
             }
-            new_generation[i].fitness=calcFitness(new_generation[i],num_particles);
+            new_generation[i].fitness=calcFitness(new_generation[i],num_particles); // this is why i could comment stuff out
             if (new_generation[i].fitness<min_fitness) {
                 min_fitness=new_generation[i].fitness;
                 min_box=i;

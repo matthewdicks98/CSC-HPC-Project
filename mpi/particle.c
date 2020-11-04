@@ -8,9 +8,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <mpi.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define DEFAULT_POP_SIZE 300 //bigger population is more costly
 #define DEFAULT_NUM_PARTICLES 30 //more PARTICLES is more costly
+#define SEED 35791248
 
 // consts
 static const int X_DEFAULT=20; //width of box
@@ -80,8 +83,10 @@ double calcFitness(box_pattern box,int num_particles){
 }
 
 /* Creates initial random population */
-void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int num_particles){
-    int i,p;
+void initPopulation(box_pattern * box, int population_size,int xmax,int ymax,int num_particles, int seed){
+    int i,p,myid;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    srand(SEED+myid+seed);
     for (p=0;p<population_size;p++) {
         for (i=0; i<num_particles; i++){
             box[p].person[i].x_pos=(rand()%(xmax + 1));
@@ -107,7 +112,7 @@ box_pattern crossover(box_pattern child, box_pattern parentOne, box_pattern pare
         child.person[i].x_pos=parentTwo.person[i].x_pos;
         child.person[i].y_pos=parentTwo.person[i].y_pos;
     }
-    child.fitness=calcFitness(child,num_particles); //calculate fitness
+    //child.fitness=calcFitness(child,num_particles); //calculate fitness
     return child;
 }
 
@@ -119,6 +124,18 @@ void copybox(box_pattern *a, box_pattern *b,int num_particles){
         (*a).person[i].y_pos=(*b).person[i].y_pos;
     }
     (*a).fitness=(*b).fitness;
+}
+
+/* deep copy b into a [does a=b] */
+void copyboxSubPop(box_pattern a, box_pattern b, int num_particles)
+{
+    int i;
+    for (i = 0; i < num_particles; i++)
+    {
+        (a).person[i].x_pos = (b).person[i].x_pos;
+        (a).person[i].y_pos = (b).person[i].y_pos;
+    }
+    (a).fitness = (b).fitness;
 }
 
 /* Main GA function - does selection, breeding, crossover and mutation */
@@ -175,7 +192,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             if (box[i].fitness>max_parent.fitness) {
                 copybox(&max_parent,&box[i],num_particles); //replace lowest fitness with highest parent
             }
-            new_generation[i].fitness=calcFitness(new_generation[i],num_particles);
+            new_generation[i].fitness=calcFitness(new_generation[i],num_particles);// this is why I could comment out in crossover
             if (new_generation[i].fitness<min_fitness) {
                 min_fitness=new_generation[i].fitness;
                 min_box=i;
@@ -202,10 +219,12 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             highest=min_box;
             //printf("max fitness should be: %f",max_parent.fitness);
         }
+        
         for(i=0;i<population_size;i++)
             free(new_generation[i].person); //release memory
         free(new_generation); //release memory
         free(max_parent.person);
+        
         return highest;
 }
 
@@ -223,14 +242,29 @@ int main(int argc, char *argv[] ){
         int iter=ITERATIONS;
         int k,i;
         int myid, nodenum; // so we can keep track of processes
+        int migration_interval;
+        float migration_rate;
         if (argc >=2) {
             population_size = atoi(argv[1]); //size population first command line argument
             if (argc>=4) {
                 x_max=atoi(argv[2]); //x dimension
                 y_max=atoi(argv[3]); //x dimension
             }
-            if (argc>=5) num_particles=atoi(argv[4]);
-            if (argc==6) iter =atoi(argv[5]);
+            if (argc>=5) 
+            {
+                num_particles=atoi(argv[4]);
+            }
+            if (argc>=6) 
+            {
+                iter =atoi(argv[5]);
+                
+            }
+
+            if (argc==8) {
+                migration_interval = atoi(argv[6]);
+                migration_rate = atof(argv[7]);
+            }
+
         }
 
         // initialize mpi
@@ -238,19 +272,23 @@ int main(int argc, char *argv[] ){
         MPI_Comm_rank(MPI_COMM_WORLD, &myid); //get rank of node's process
         MPI_Comm_size(MPI_COMM_WORLD, &nodenum);
 
+        // timing
+        struct timeval begin, end;
+        if(myid == 0){
+            gettimeofday(&begin, 0);
+        }
+
         // distribute populations over the processes
         population_size = (int)round(population_size/nodenum);
-
-        // migration stuff
-        double migration_rate = 0.2;
-        int migration_interval = 10;
 
         int gen_count = 0;
 
         // prints and file io must come from p0
-        FILE *f = fopen("solution.txt", "w");
-        if(myid == 0){
-            printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations\n", num_particles, population_size, x_max, y_max, iter);
+        FILE *f;
+        if (myid == 0)
+        {
+            f = fopen("solution.txt", "w");
+            printf("Starting optimization with particles = %d, population=%d, width=%d,length=%d for %d iterations | migration_interval=%d, migration_rate=%f\n", num_particles, population_size, x_max, y_max, iter,migration_interval,migration_rate);
 
             printf("Writing dimensions to file\n");
             fprintf(f, "%d,%d\n", x_max, y_max); //write box dimensions as first line of file
@@ -267,11 +305,11 @@ int main(int argc, char *argv[] ){
                 if(myid == 0){
                     printf("initializing population\n");
                 }
-                initPopulation(population,population_size,x_max,y_max,num_particles);
+                initPopulation(population,population_size,x_max,y_max,num_particles, k);
                 double init_pop_fit = calcFitness(population[0], num_particles); // just seeing what the initial solutions look like
                 if(myid == 0){
-                printf("Initial population fitness = %f\n", init_pop_fit); // take out later
-                printf("=========%d\n", k);
+                    printf("Initial population fitness = %f\n", init_pop_fit); // take out later
+                    printf("=========%d\n", k);
                 }
 
                 double max_fitness=0;
@@ -280,8 +318,9 @@ int main(int argc, char *argv[] ){
                 int gen=0,highest=0;
                 double best_fitness = 0;
                 int count_since_last_improvement = 0;
+                
                 // stopping condition for the GA
-                while (gen<MAX_GEN && count_since_last_improvement <= TOLERANCE){ 
+                while (gen< 200){ //&& count_since_last_improvement <= TOLERANCE){ 
                 // want to add a tolerence stopping criteria because convergence seems to be
                 // achieved at around gen = 300
                     highest=breeding(population,population_size,x_max,y_max,num_particles);
@@ -289,39 +328,225 @@ int main(int argc, char *argv[] ){
                     if(population[highest].fitness <= best_fitness){
                         count_since_last_improvement++;
                     }else{
-                        if (k == 0)
-                        {
+                        
                             if(myid == 0){
-                            printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
+                                printf("Gen = %d | fitness = %f\n", gen, population[highest].fitness);
                             }
-                        }
+                        
                         count_since_last_improvement = 0;
                         best_fitness = population[highest].fitness;
                     }
                     gen+=1;
                     // do migration stuff here
-                    
+                    if(gen % migration_interval == 0){
+                        if(myid == 0){
+                        printf("======== Communicating ========\n");
+                        }
+
+                        // create memory
+                        int migrating_individuals = (int)(migration_rate * population_size);
+                        box_pattern  subpopulation_send[migrating_individuals];
+                        box_pattern  subpopulation_recieve[migrating_individuals];
+
+                        // communicate (using a ring topology for now)
+                        int send_to = myid + 1;
+                        int rec_from = myid - 1;
+                        // if it is the master then it wraps around
+                        if (myid == 0)
+                        {
+                            rec_from = nodenum - 1;
+                        }
+                        if (myid == nodenum - 1)
+                        {
+                            send_to = 0;
+                        }
+
+                        // selection procedure is just random for now
+                        for (int k = 0; k < migrating_individuals; k++)
+                        {
+                            // pick a random individual
+                            int r = 0;
+                            r = rand() % population_size;
+                            subpopulation_send[k] = population[r];
+                        
+                        }
+
+                        // set up description of the new struct defining a posistion struct
+                        MPI_Datatype positiontype, oldtypes[1]; // required variables
+                        int blockcounts[1];
+                        MPI_Aint offsets[1];
+                        offsets[0] = 0;
+                        oldtypes[0] = MPI_INT;
+                        blockcounts[0] = 2;
+
+                        // create the new MPI struct
+                        MPI_Type_create_struct(1,blockcounts, offsets, oldtypes, &positiontype);
+                        MPI_Type_commit(&positiontype);
+
+                        // set up description of struct defining the box_pattern struct
+                        /*MPI_Datatype boxtype, boxtype2, oldtypesbox[2];
+                        int blockcountsbox[2];
+                        MPI_Aint offsetsbox[2], lb, extent;
+
+                        offsetsbox[0] = 0;
+                        oldtypesbox[0] = positiontype;
+                        blockcountsbox[0] = num_particles;
+
+                        MPI_Type_get_extent(positiontype, &lb, &extent); // extent is 8
+
+                        offsetsbox[1] = num_particles * extent;
+                        oldtypesbox[1] = MPI_FLOAT;
+                        blockcountsbox[1] = 1;
+                        
+                        MPI_Type_create_struct(2, blockcountsbox, offsetsbox, oldtypesbox, &boxtype);
+                        MPI_Type_create_resized(boxtype,lb,extent,&boxtype2);
+                        MPI_Type_commit(&boxtype2);
+                        
+
+                        // send the data
+                        MPI_Send(subpopulation_send, migrating_individuals, boxtype2, send_to, 0, MPI_COMM_WORLD);
+                        MPI_Recv(subpopulation_recieve, migrating_individuals, boxtype2, rec_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        */
+                        //printf("myid = %d |send fit = %f | rec fit = %f\n", myid, subpopulation_send[0].fitness, subpopulation_recieve[0].fitness);
+                        
+                        // send 1 individual at a time for all migrating individuals (can try fix this later)
+                        //printf("M = %d\n",migrating_individuals);
+
+                        for(int j = 0; j<migrating_individuals; j++){
+                            //MPI_Request *request;
+                            // send fitness
+                            float fitness_send[1] = {subpopulation_send[j].fitness};
+                            MPI_Send(&fitness_send, 1, MPI_FLOAT, send_to, 0, MPI_COMM_WORLD);
+
+                            // send positions
+                            MPI_Send(subpopulation_send[j].person, num_particles, positiontype, send_to, 0, MPI_COMM_WORLD);
+
+                            // recieve fitness (from other processes)
+                            float fitness_rec[1];
+                            MPI_Recv(&fitness_rec, 1, MPI_FLOAT, rec_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                            
+                            // recieve positions (from other processes)
+                            position positions[num_particles];
+                            MPI_Recv(positions, num_particles, positiontype, rec_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                            
+                            // randomly choose a solution in the population to change
+                            //printf("myid = %d |send fit = %d | rec fit = %d\n", myid, subpopulation_send[0].person[num_particles-1].x_pos, positions[num_particles-1].x_pos);
+
+                            int r = rand() % population_size;
+                            population[r].fitness = fitness_rec[0];
+                            // have to do this otherwise there is a segmentation error
+                            for(int i = 0; i<num_particles; i++){
+                                population[r].person[i] = positions[i];
+                                //printf("%d\n",population[r].person[i].y_pos);
+                            }
+                            
+                        }
+                        MPI_Type_free(&positiontype);
+                        //MPI_Type_free(&boxtype);
+                    }
+
+                }         
+                   
+                int myid;
+                MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
+                // set up description of the new struct defining a posistion struct
+                MPI_Datatype positiontype, oldtypes[1]; // required variables
+                int blockcounts[1];
+                MPI_Aint offsets[1];
+                offsets[0] = 0;
+                oldtypes[0] = MPI_INT;
+                blockcounts[0] = 2;
+
+                // create the new MPI struct
+                MPI_Type_create_struct(1, blockcounts, offsets, oldtypes, &positiontype);
+                MPI_Type_commit(&positiontype);
+
+                // merge the data from the processes, give it all to p0
+                // given that we have the best in this process send the best to master process
+                if(myid != 0){
+
+                    float fitness_send[1] = {population[highest].fitness};
+                    MPI_Send(&fitness_send, 1, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+                    MPI_Send(population[highest].person, num_particles, positiontype, 0, 0, MPI_COMM_WORLD);
+                    //printf("x send = %d\n", population[highest].person[0].x_pos);
+
+                }else if (myid == 0){
+                    // if we are the master then we have the highest, find the best out of all the highs
+                    float bfit = population[highest].fitness;
+                    /*box_pattern  bsol;
+
+                    bsol.fitness = bfit;
+                    for(int i = 0; i<num_particles; i++){
+                        bsol.person[i].x_pos = population[highest].person[i].x_pos;
+                        bsol.person[i].y_pos = population[highest].person[i].y_pos;
+                    }*/
+
+                    // for each process recieve from them and place in storage
+                    for(int i = 1; i<nodenum; i++){
+                        
+                        // recieve fitness (from other processes)
+                        float fitness_rec[1];
+                        MPI_Recv(&fitness_rec, 1, MPI_FLOAT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+                        // recieve positions (from other processes)
+                        position positions[num_particles];
+                        MPI_Recv(positions, num_particles, positiontype, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+                        // if found a better solution
+                        if(fitness_rec[0] > bfit){
+                            printf("old = %f , new = %f\n", bfit, fitness_rec[0]);
+                            population[highest].fitness = fitness_rec[0];
+                            bfit = fitness_rec[0];
+                            for (int j = 0; j < num_particles; j++)
+                            {
+                                population[highest].person[j].x_pos = positions[j].x_pos;
+                                population[highest].person[j].y_pos = positions[j].y_pos;
+                            }
+                        }
+                        //printf("x rec = %d\n", bsol.person[0].x_pos);
+                    }
+
+                    // do all the prints and processing using the master process
+                    printf("# generations = %d \n", gen);
+                    printf("Best solution:\n");
+                    printf("Stuff = %d\n", population[highest].person[19].x_pos);
+                    printbox(population[highest], num_particles);
+                    if (f == NULL)
+                    {
+                        printf("Error opening file!\n");
+                        exit(1);
+                    }
+                    printboxFile(population[highest], f, num_particles);
+                    printf("---------");
+                    gen_count += gen;
                 }
-            printf("# generations = %d \n", gen);
-            printf("Best solution:\n");
-            printbox(population[highest],num_particles);
-            if (f == NULL)
-            {
-                printf("Error opening file!\n");
-                exit(1);
+                MPI_Type_free(&positiontype);
             }
-            printboxFile(population[highest],f,num_particles);
-            printf("---------");
-            gen_count+=gen;
+
+        if(myid == 0){
+            fclose(f);
         }
-        fclose(f);
+        
     
         for(i=0;i<population_size;i++)
                 free(population[i].person); //release memory
         free(population); //release memory
+        
+        if(myid == 0){
+            printf("Average generations: %f\n", (double)gen_count/(double)k);
 
-        printf("Average generations: %f\n", (double)gen_count/(double)k);
+            // ending timing
+            gettimeofday(&end, 0);
+            long seconds = end.tv_sec - begin.tv_sec;
+            long microseconds = end.tv_usec - begin.tv_usec;
+            double elapsed = seconds + microseconds * 1e-6;
+            printf("Time measured: %.3f seconds.\n", elapsed);
 
+            printf("Time per Generation = %f\n", elapsed / gen_count);
+        }
+
+        MPI_Finalize();
         //finish = MPI_Wtime();
 
         return 0;
