@@ -271,6 +271,7 @@ int main(int argc, char *argv[] ){
     fprintf(f, "%d,%d\n", x_max, y_max); //write box dimensions as first line of file
 
     // possible parallization here (population is the only thing that is being written to)
+    #pragma omp parallel for ordered private(k, i) num_threads(iter)
     for (k = 0; k < iter; k++)
     {   //k is number of times whole simulation is run
         box_pattern *population;
@@ -318,6 +319,8 @@ int main(int argc, char *argv[] ){
             gen += 1;
         }
 
+        #pragma omp ordered
+        {
         printf("# generations = %d \n", gen);
         printf("Best solution:\n");
 
@@ -329,8 +332,12 @@ int main(int argc, char *argv[] ){
         }
         printboxFile(population[highest], f, num_particles);
         printf("---------");
+        }
 
+        #pragma omp critical
+        {
         gen_count+=gen;
+        }
 
         for (i = 0; i < population_size; i++)
             free(population[i].person); //release memory
