@@ -383,35 +383,6 @@ int main(int argc, char *argv[] ){
                         MPI_Type_create_struct(1,blockcounts, offsets, oldtypes, &positiontype);
                         MPI_Type_commit(&positiontype);
 
-                        // set up description of struct defining the box_pattern struct
-                        /*MPI_Datatype boxtype, boxtype2, oldtypesbox[2];
-                        int blockcountsbox[2];
-                        MPI_Aint offsetsbox[2], lb, extent;
-
-                        offsetsbox[0] = 0;
-                        oldtypesbox[0] = positiontype;
-                        blockcountsbox[0] = num_particles;
-
-                        MPI_Type_get_extent(positiontype, &lb, &extent); // extent is 8
-
-                        offsetsbox[1] = num_particles * extent;
-                        oldtypesbox[1] = MPI_FLOAT;
-                        blockcountsbox[1] = 1;
-                        
-                        MPI_Type_create_struct(2, blockcountsbox, offsetsbox, oldtypesbox, &boxtype);
-                        MPI_Type_create_resized(boxtype,lb,extent,&boxtype2);
-                        MPI_Type_commit(&boxtype2);
-                        
-
-                        // send the data
-                        MPI_Send(subpopulation_send, migrating_individuals, boxtype2, send_to, 0, MPI_COMM_WORLD);
-                        MPI_Recv(subpopulation_recieve, migrating_individuals, boxtype2, rec_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        */
-                        //printf("myid = %d |send fit = %f | rec fit = %f\n", myid, subpopulation_send[0].fitness, subpopulation_recieve[0].fitness);
-                        
-                        // send 1 individual at a time for all migrating individuals (can try fix this later)
-                        //printf("M = %d\n",migrating_individuals);
-
                         for(int j = 0; j<migrating_individuals; j++){
                             //MPI_Request *request;
                             // send fitness
@@ -474,13 +445,6 @@ int main(int argc, char *argv[] ){
                 }else if (myid == 0){
                     // if we are the master then we have the highest, find the best out of all the highs
                     float bfit = population[highest].fitness;
-                    /*box_pattern  bsol;
-
-                    bsol.fitness = bfit;
-                    for(int i = 0; i<num_particles; i++){
-                        bsol.person[i].x_pos = population[highest].person[i].x_pos;
-                        bsol.person[i].y_pos = population[highest].person[i].y_pos;
-                    }*/
 
                     // for each process recieve from them and place in storage
                     for(int i = 1; i<nodenum; i++){
