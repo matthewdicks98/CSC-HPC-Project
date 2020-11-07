@@ -1,4 +1,3 @@
-#hpc02
 cores, pop_size, num_particles, final_fitness, gen_count, elapsed, elapsed/gen_count
 
 1, 2000, 50, 244152.118286, 609, 503.223, 0.826311
