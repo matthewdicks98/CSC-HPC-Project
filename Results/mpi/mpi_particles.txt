@@ -1,3 +1,5 @@
+cores, pop_size, num_particles, migration_interval, migration_rate, final_fitness, gen_count, elapsed, elapsed/gen_count
+
 32, 2000, 10, 50, 0.050000, 40655.500288, 800, 1.054, 0.001318
 32, 2000, 25, 50, 0.050000, 93573.803575, 800, 5.972, 0.007465
 32, 2000, 50, 50, 0.050000, 130028.859854, 800, 29.645, 0.037056
