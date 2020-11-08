@@ -150,6 +150,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             new_generation[i].person=malloc(num_particles*sizeof(position));
 
         for (i=0; i<population_size; i+=2){ //two children
+            
 
                 // Determine breeding pair, with tournament of 2 (joust)
                 int one = rand()%(population_size), two=rand()%(population_size);
@@ -163,9 +164,9 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
             
                 int splitPoint = rand() % num_particles; //split chromosome at point
                 new_generation[i]= crossover(new_generation[i], box[parentOne], box[parentTwo], splitPoint,num_particles); //first child
-
-                new_generation[i+1] = crossover(new_generation[i+1], box[parentTwo], box[parentOne], splitPoint,num_particles); //second child
-            
+                if(i+1<population_size){
+                    new_generation[i+1] = crossover(new_generation[i+1], box[parentTwo], box[parentOne], splitPoint,num_particles); //second child
+                }
                 // Mutation first child
                 double mutation = rand()/(double)RAND_MAX;
                 if (mutation <= MUTATION_RATE ){
@@ -173,11 +174,13 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
                     new_generation[i].person[mutated].x_pos=(rand()%(x_max + 1));
                     new_generation[i].person[mutated].y_pos=(rand()%(y_max + 1));
                 }
-                mutation = rand()/(double)RAND_MAX; //mutation second child
-                if (mutation <= MUTATION_RATE ){
-                    int mutated = rand() % num_particles;
-                    new_generation[i+1].person[mutated].x_pos=(rand()%(x_max + 1));
-                    new_generation[i+1].person[mutated].y_pos=(rand()%(y_max + 1));
+                if(i+1<population_size){
+                    mutation = rand()/(double)RAND_MAX; //mutation second child
+                    if (mutation <= MUTATION_RATE ){
+                        int mutated = rand() % num_particles;
+                        new_generation[i+1].person[mutated].x_pos=(rand()%(x_max + 1));
+                        new_generation[i+1].person[mutated].y_pos=(rand()%(y_max + 1));
+                    }
                 }
 
         }
