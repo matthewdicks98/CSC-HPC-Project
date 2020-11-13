@@ -1,3 +1,4 @@
+cores, pop_size, num_particles, final_fitness, gen_count, elapsed, elapsed/gen_count
 
 1, 2000, 20, 89596.784403, 296, 8.257, 0.027896
 1, 4000, 20, 89597.062125, 165, 9.315, 0.056454
