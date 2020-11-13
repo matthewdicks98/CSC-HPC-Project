@@ -12,6 +12,7 @@ The Makefiles provided are configured to run on a Ubuntu Linux system.
 
 # Serial
 The serial GA can be found in the 'serial' directory along with its appropriate Makefile.
+To compile the serial GA use the 'make' command from within the 'serial' directory.
 Once in the 'serial' directory you may compile and run the serial GA with the 'make run' command.
 This will run the serial GA with the defualt parameters.
 Upon completion a grid will be printed to a python file to visualise the final population.
@@ -28,6 +29,7 @@ This will run all the tests for varying population sizes and number of particles
 
 # openMP
 The openMP GA can be found in the 'openmp' directory along with its appropriate Makefile.
+To compile the omp GA use the 'make' command from within the 'openmp' directory.
 Once in the 'openmp' directory you may compile and run the openmp GA with the 'make run_omp' command.
 This will run the openmp GA with the default parameters.
 Upon completion a grid will be printed to a python file to visualise the final population.
@@ -43,6 +45,7 @@ This will run all the tests for varying population sizes and number of particles
 
 # MPI
 The MPI GA can be found in the 'mpi' directory along with its appropriate Makefile.
+To compile the mpi GA use the 'make' command from within the 'mpi' directory.
 Once in the 'mpi' directory you may compile and run the mpi GA with the 'make run_mpi' command.
 This will run the mpi GA with the default parameters. 
 Upon completion a grid will be printed to a python file to visualise the final population.
@@ -55,6 +58,8 @@ If you wish to run the mpi GA with differnt parameters please edit the appropria
   e: number of iterations
   f: migration interval
   g: migration rate (as a decimal percentage)
+  * when editing the parameter ensure that the migration rate is large enough that the population divided by the number of processes times the migration rate is greater than or equal to 1. [(a/processes)*g>=1 ] this is essential to ensure at least 1 individual migrates at eahc mirgation period.
+  
 
 To test the mpi GA on a laptop the './mpi_test.sh' command can be used from in the 'mpi' directory.
 This will run all the tests for varying population sizes and number of particles using 1, 2 and 4 processes.
@@ -63,6 +68,14 @@ This will run all the tests for varying population sizes and number of particles
 In order to run the relative experiments exploring the effects of different population sizes and number of particles across different cores slurm batch scripts were used.
 These can be found in the 'experiments' directory.
 The tests were edited as certain parameters led to the program timing out with the maximum 59 minute limit.
-These scripts 
+These scripts were submitted to the cluster using the 'sbatch' command followed by the name of the test.
+The headers of the MPI sbatch script were edited with each different core number as slurm does not evenly divide jobs among processes and needs a specific command to ensure this takes place.
+
+# Graphing results
+Jupyter was used to create notebooks for graphing the data.
+To open these ruun 'jupyter-lab' from the main directory.
+This will open the files in a juppyter notebook using a localhost.
+Else please find the file on the gitHub repository https://github.com/matthewdicks98/CSC_HPC_Project
+
 
 
