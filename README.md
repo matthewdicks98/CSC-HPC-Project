@@ -12,7 +12,7 @@ The Makefiles provided are configured to run on a Ubuntu Linux system.
 
 # Serial
 The serial GA can be found in the 'serial' directory along with its appropriate Makefile.
-To compile the serial GA use the 'make' command from within the 'serial' directory.
+To compile the serial GA use the 'make particle' command from within the 'serial' directory.
 Once in the 'serial' directory you may compile and run the serial GA with the 'make run' command.
 This will run the serial GA with the defualt parameters.
 Upon completion a grid will be printed to a python file to visualise the final population.
@@ -29,7 +29,7 @@ This will run all the tests for varying population sizes and number of particles
 
 # openMP
 The openMP GA can be found in the 'openmp' directory along with its appropriate Makefile.
-To compile the omp GA use the 'make' command from within the 'openmp' directory.
+To compile the omp GA use the 'make particle_omp' command from within the 'openmp' directory.
 Once in the 'openmp' directory you may compile and run the openmp GA with the 'make run_omp' command.
 This will run the openmp GA with the default parameters.
 Upon completion a grid will be printed to a python file to visualise the final population.
@@ -45,7 +45,7 @@ This will run all the tests for varying population sizes and number of particles
 
 # MPI
 The MPI GA can be found in the 'mpi' directory along with its appropriate Makefile.
-To compile the mpi GA use the 'make' command from within the 'mpi' directory.
+To compile the mpi GA use the 'make particle_mpi' command from within the 'mpi' directory.
 Once in the 'mpi' directory you may compile and run the mpi GA with the 'make run_mpi' command.
 This will run the mpi GA with the default parameters. 
 Upon completion a grid will be printed to a python file to visualise the final population.
