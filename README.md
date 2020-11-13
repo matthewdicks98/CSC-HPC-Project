@@ -73,8 +73,8 @@ The headers of the MPI sbatch script were edited with each different core number
 
 # Graphing results
 Jupyter was used to create notebooks for graphing the data.
-To open these ruun 'jupyter-lab' from the main directory.
-This will open the files in a juppyter notebook using a localhost.
+To open these run 'jupyter-lab' from the main directory.
+This will open the files in a jupyter notebook using a localhost.
 Else please find the file on the gitHub repository https://github.com/matthewdicks98/CSC_HPC_Project
 
 
