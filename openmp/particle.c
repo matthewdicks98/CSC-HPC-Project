@@ -142,7 +142,7 @@ int breeding(box_pattern * box, int population_size, int x_max, int y_max,int nu
 
         /////////// HERE /////////////
         // possible parallization but might not be easy (try first)
-        //#pragma omp parallel for private(i) //speed up is ok
+        #pragma omp parallel for private(i) //speed up is ok
         for (i = 0; i < population_size; i += 2)
         { //two children
 
