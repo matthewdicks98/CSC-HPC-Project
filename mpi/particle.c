@@ -477,7 +477,6 @@ int main(int argc, char *argv[] ){
                     // do all the prints and processing using the master process
                     printf("# generations = %d \n", gen);
                     printf("Best solution:\n");
-                    printf("Stuff = %d\n", population[highest].person[19].x_pos);
                     printbox(population[highest], num_particles);
                     if (f == NULL)
                     {
