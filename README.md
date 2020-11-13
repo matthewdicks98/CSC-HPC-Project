@@ -59,7 +59,6 @@ If you wish to run the mpi GA with differnt parameters please edit the appropria
   f: migration interval
   g: migration rate (as a decimal percentage)
   * when editing the parameter ensure that the migration rate is large enough that the population divided by the number of processes times the migration rate is greater than or equal to 1. [(a/processes)*g>=1 ] this is essential to ensure at least 1 individual migrates at eahc mirgation period.
-  
 
 To test the mpi GA on a laptop the './mpi_test.sh' command can be used from in the 'mpi' directory.
 This will run all the tests for varying population sizes and number of particles using 1, 2 and 4 processes.
@@ -70,6 +69,8 @@ These can be found in the 'experiments' directory.
 The tests were edited as certain parameters led to the program timing out with the maximum 59 minute limit.
 These scripts were submitted to the cluster using the 'sbatch' command followed by the name of the test.
 The headers of the MPI sbatch script were edited with each different core number as slurm does not evenly divide jobs among processes and needs a specific command to ensure this takes place.
+#SBATCH --nodes=4 --ntasks=32 --ntasks-per-node=8 
+the above is an example of running 32 processes on 4 node, the tasks per node have to be specified in order to get maximum performance
 
 # Graphing results
 Jupyter was used to create notebooks for graphing the data.
