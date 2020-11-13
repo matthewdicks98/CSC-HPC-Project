@@ -49,10 +49,10 @@ If you wish to run the mpi GA with differnt parameters please edit the appropria
   c: y dimension of the grid
   d: number of particles
   e: number of iterations
-  f: migration rate (as a decimal percentage)
-  g: migration interval
+  f: migration interval
+  g: migration rate (as a decimal percentage)
 
 # Testing 
-In order to run the relative tests exploring the 
+In order to run the relative tests exploring the effects of different population sizes and number of particles across different cores batch were created. These can be found in the 'testing' folder. There are 
 
 
