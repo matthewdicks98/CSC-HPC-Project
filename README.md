@@ -68,9 +68,14 @@ In order to run the relative experiments exploring the effects of different popu
 These can be found in the 'experiments' directory.
 The tests were edited as certain parameters led to the program timing out with the maximum 59 minute limit.
 These scripts were submitted to the cluster using the 'sbatch' command followed by the name of the test.
+
 The headers of the MPI sbatch script were edited with each different core number as slurm does not evenly divide jobs among processes and needs a specific command to ensure this takes place.
 #SBATCH --nodes=4 --ntasks=32 --ntasks-per-node=8 
 the above is an example of running 32 processes on 4 node, the tasks per node have to be specified in order to get maximum performance
+
+When running the openMP GA with differnt numbers of threads these must be specified within the script 
+export OMP_NUM_THREADS=32
+the above is an example of running 32 theads on the omp GA
 
 # Graphing results
 Jupyter was used to create notebooks for graphing the data.
