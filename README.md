@@ -7,7 +7,7 @@ There are three different versions of the GA:
   openmp
   mpi
   
-In order to compile and run all of the programs please ensure that the correct openMP and MPI compilers are available and edit the batch scripts if neccessary.
+In order to compile and run all of the programs please ensure that the correct openMP and MPI compilers are available and edit the Makefiles if neccessary.
 
 # Serial
 The serial GA can be found in the 'serial' directory along with its appropriate Makefile.
@@ -39,7 +39,7 @@ Upon completion a grid will be printed to a python file to visualise the final p
 The MPI GA can be found in the 'mpi' directory along with its appropriate Makefile.
 Once in the 'mpi' directory you may run the make command.
 Upon running the 'make particle_omp' command the particle.c program will create the particle_omp object. 
-Once this is complete you may run the openMP GA using a command such as 'run ./particle a b c d e f g' where a, b, c, d, e, f and g are input parameters representing the following information:
+Once this is complete you may run the openMP GA using a command such as 'mpirun particle a b c d e f g' where a, b, c, d, e, f and g are input parameters representing the following information:
   a: population size
   b: x dimension of the grid
   c: y dimension of the grid
