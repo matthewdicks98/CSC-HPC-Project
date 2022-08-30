@@ -1,4 +1,4 @@
-# CSC_HPC_Project
+# CSC HPC Project
 Honours High Performance Computing project.
 
 This project aimed to improve upon a given genetic algorithm (GA) and develop two subsequent parallel versions of it.
